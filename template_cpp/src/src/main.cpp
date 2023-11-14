@@ -4,6 +4,9 @@
 
 #include "parser.hpp"
 #include "hello.h"
+#include "run.hpp"
+#include "FLL.hpp"
+#include "PL.hpp"
 #include <signal.h>
 
 
@@ -17,7 +20,7 @@ static void stop(int) {
 
   // write/flush output file if necessary
   std::cout << "Writing output.\n";
-
+  logFile.close();
   // exit directly from signal handler
   exit(0);
 }
@@ -66,6 +69,8 @@ int main(int argc, char **argv) {
   std::cout << "Doing some initialization...\n\n";
 
   std::cout << "Broadcasting and delivering messages...\n\n";
+
+  run(parser, hosts);
 
   // After a process finishes broadcasting,
   // it waits forever for the delivery of messages.
