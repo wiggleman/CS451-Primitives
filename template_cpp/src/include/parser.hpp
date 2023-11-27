@@ -39,6 +39,10 @@ public:
       return std::string(inet_ntoa(tmp_ip));
     }
 
+    bool operator==(const Host& other) const {
+        return id == other.id;
+    }
+
     unsigned short portReadable() const { return ntohs(port); }
 
     unsigned long id;

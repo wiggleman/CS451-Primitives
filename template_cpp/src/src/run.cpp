@@ -1,27 +1,24 @@
 #include "parser.hpp"
 #include "run.hpp"
 #include "PL.hpp"
+#include "BEB.hpp"
+#include "PFD.hpp"
+#include "utility.hpp"
+#include "URB.hpp"
 
-std::mutex fileMutex;
-std::ofstream logFile; // Open the file in append mode
 
-void writeToLogFile(const std::string& message) {
-    // Lock the mutex before writing to the file
-    std::lock_guard<std::mutex> lock(fileMutex);
-
-    if (logFile.is_open()) {
-        logFile << message << std::endl;
-    }
-}
-
-void callback(const char *msg, Parser::Host host_sndr){
+void callback(const std::string& msg, Parser::Host host_sndr){
     std::cout << "d " << host_sndr.id << " " << msg << "\n";
     writeToLogFile(std::string("d ") + std::to_string(host_sndr.id) + " " + msg);
     std::cout.flush();
 } 
 
+void PFDCallback(Parser::Host host_crashed){
+    std::cout << "host " << host_crashed.id << " crashed!" << "\n";
+}
+
 void run(Parser parser, std::vector<Parser::Host> hosts){
-    logFile.open(parser.outputPath(), std::ios::app);
+    logFile.open(parser.outputPath());
 
     const char *config_path = parser.configPath();
     std::ifstream file(config_path);
@@ -31,11 +28,11 @@ void run(Parser parser, std::vector<Parser::Host> hosts){
         return;
     }
     size_t n = hosts.size();
-    unsigned long M, i;
+    unsigned long M;
     std::string line;
     std::getline(file, line);
     std::istringstream iss(line);
-    if (!(iss >> M >> i)) {
+    if (!(iss >> M)) {
         std::cerr << "Error parsing line: " << line << std::endl;
         return;
     }
@@ -45,21 +42,36 @@ void run(Parser parser, std::vector<Parser::Host> hosts){
 
     Parser::Host host_me = hosts[parser.id() - 1];
     PL* pl = new PL(host_me, hosts);
-    pl -> subscribe(callback);
+    BEB* beb = new BEB(hosts, *pl);
+    PFD* pfd = new PFD(hosts, *pl);
+    URB* urb = new URB(host_me, hosts, *beb);
 
-    if (parser.id() != i){
-        Parser::Host host_rcvr = hosts[i-1];
-        for (unsigned long m = 0; m < M; m++){
-            pl->send(std::to_string(m+1).c_str(), host_rcvr);
+    urb -> subscribe(callback);
+    pfd -> subscribe([urb](Parser::Host host) {
+            urb -> pfd_notify(host);
+        });
+    pl -> subscribe( [beb](std::string msg, Parser::Host host) {
+            beb -> pl_deliver(msg, host);
+        },
+        [pfd](std::string msg, Parser::Host host) {
+            pfd -> pl_deliver_hb(msg, host);
         }
+    );
+    
+    for (unsigned long m = 0; m < M; m++){
+        urb->broadcast(std::to_string(m+1).c_str() );
     }
+    
         
     std::cout.flush();
 
     while (true) {
         std::this_thread::sleep_for(std::chrono::hours(1));
     }
+    delete beb;
+    delete urb;
     delete pl;
+    delete pfd;
 }
 
 // void receive(std::vector<Parser::Host> hosts){

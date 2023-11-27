@@ -14,7 +14,7 @@ class FLL {
     bool subscribed = false;
 
   public:
-    using CallbackType = std::function<void(const char *, Parser::Host)>;
+    using CallbackType = std::function<void(std::string, Parser::Host)>;
     FLL(Parser::Host host, std::vector<Parser::Host> hosts) {
       this->hosts = hosts;
 
@@ -39,14 +39,14 @@ class FLL {
 
 
     }
-    void send( const char *msg, Parser::Host host) const {
+    void send( const std::string& msg, Parser::Host host) const {
       struct sockaddr_in rcvr_addr;
       //filling rcvr info
       memset(&rcvr_addr, 0, sizeof(rcvr_addr)); 
       rcvr_addr.sin_family    = AF_INET; // IPv4 
       rcvr_addr.sin_addr.s_addr = host.ip;//INADDR_ANY; 
       rcvr_addr.sin_port = host.port; 
-      sendto(sockfd, msg, strlen(msg),  0,
+      sendto(sockfd, msg.c_str(), msg.size(),  0,
       static_cast<const sockaddr*>(static_cast<const void*>(&rcvr_addr)), 
           sizeof(rcvr_addr)); 
       //std::cout << "fl:b " << msg << "\n";
@@ -89,7 +89,8 @@ class FLL {
           perror("can't identify sender"); 
           pthread_exit(NULL);
         }
-        callback(buffer, host_sndr);
+        std::string msg_str = buffer;
+        callback(msg_str, host_sndr);
       }
     }
 };
