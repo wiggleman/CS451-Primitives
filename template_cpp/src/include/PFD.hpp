@@ -41,7 +41,7 @@ class PFD{
     void timer(){
         for(;;){
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(6000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(2500));
             aliveMutex.lock();
             for (auto it = correct.begin(); it != correct.end();) {
                 auto result = std::find(alive.begin(), alive.end(), *it);

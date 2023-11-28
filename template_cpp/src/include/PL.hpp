@@ -55,7 +55,7 @@ class PL{
           fll.send(pair.toString(), pair.host);
         }
         sending_mutex.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
       }
     }
 

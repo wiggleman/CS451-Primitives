@@ -35,8 +35,7 @@ class URB {
         pending.push_back(pair);
         pendingMutex.unlock();
         beb.broadcast(pair.toString());
-        std::cout << "b " << msg << "\n";
-        writeToLogFile( std::string("b ") + msg);
+
     }
 
     void subscribe(CallbackType urb_deliver){

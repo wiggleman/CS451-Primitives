@@ -60,8 +60,13 @@ namespace std {
     template <>
     struct hash<Pair> {
         size_t operator()(const Pair& p) const {
-            // Use a simple hash function for Pair
             return hash<size_t>()(p.seqNum) ^ hash<unsigned long>()(p.host.id);
+        }
+    };
+    template <>
+    struct hash<Parser::Host> {
+        size_t operator()(const Parser::Host& host) const {
+            return hash<unsigned long>()(host.id);
         }
     };
 }

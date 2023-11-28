@@ -5,6 +5,7 @@
 #include "PFD.hpp"
 #include "utility.hpp"
 #include "URB.hpp"
+#include "FIFO.hpp"
 
 
 void callback(const std::string& msg, Parser::Host host_sndr){
@@ -45,8 +46,9 @@ void run(Parser parser, std::vector<Parser::Host> hosts){
     BEB* beb = new BEB(hosts, *pl);
     PFD* pfd = new PFD(hosts, *pl);
     URB* urb = new URB(host_me, hosts, *beb);
+    FIFO* fifo = new FIFO(host_me, hosts, *urb);
 
-    urb -> subscribe(callback);
+    fifo -> subscribe(callback);
     pfd -> subscribe([urb](Parser::Host host) {
             urb -> pfd_notify(host);
         });
@@ -59,7 +61,7 @@ void run(Parser parser, std::vector<Parser::Host> hosts){
     );
     
     for (unsigned long m = 0; m < M; m++){
-        urb->broadcast(std::to_string(m+1).c_str() );
+        fifo->broadcast(std::to_string(m+1).c_str() );
     }
     
         
@@ -72,6 +74,7 @@ void run(Parser parser, std::vector<Parser::Host> hosts){
     delete urb;
     delete pl;
     delete pfd;
+    delete fifo;
 }
 
 // void receive(std::vector<Parser::Host> hosts){
