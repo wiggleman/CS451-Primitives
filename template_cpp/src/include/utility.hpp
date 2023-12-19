@@ -1,8 +1,14 @@
 #pragma once
 #include "parser.hpp"
+#include <set>
 
 extern std::ofstream logFile;
+extern const std::string PROPOSAL;
+extern const std::string ACK;
+extern const std::string NACK;
 void writeToLogFile(const std::string& message);
+std::string encode(const size_t& pNum, const std::set<unsigned int>& values);
+void decodeData(const std::string& encodedString, size_t& pNum, std::set<unsigned int>& values);
 
 struct Pair { // a pair of host and msg
     Parser::Host host; //sometimes it signifies the sender sometimes the receiver

@@ -15,8 +15,9 @@ class PL{
     std::mutex sending_mutex;
     std::mutex delivered_mutex;
     std::atomic<size_t> counter{0};
-    CallbackType pl_deliver;
-    CallbackType pl_deliver_hb;
+    CallbackType pl_deliver_nack;
+    CallbackType pl_deliver_ack;
+    CallbackType pl_deliver_prop;
     std::vector<Parser::Host> hosts;
   public:
     
@@ -31,16 +32,17 @@ class PL{
       size_t seqNum = counter.fetch_add(1, std::memory_order_relaxed);
       Pair pair = {host, seqNum, msg}; // here host is receiveer
       fll.send(pair.toString(), host);
-      //std::cout<< "Perfect link sent " << pair.toString()<< " to host" << host.id << "\n";
+      //std::cout<< "PL sent " << msg.c_str()<< " to host" << host.id << "\n";
       //std::cout.flush();
       sending_mutex.lock();
       sending.push_back(pair);
       sending_mutex.unlock();
     }
 
-    void subscribe(CallbackType pl_deliver, CallbackType pl_deliver_hb){
-      this->pl_deliver = pl_deliver;
-      this->pl_deliver_hb = pl_deliver_hb;
+    void subscribe(CallbackType nack, CallbackType ack, CallbackType prop){
+      pl_deliver_nack = nack;
+      pl_deliver_ack = ack;
+      pl_deliver_prop = prop;
       // upon event fll deliver 
       fll.subscribe([this](std::string msg, Parser::Host host) {
           this->fll_deliver(msg, host);
@@ -61,10 +63,16 @@ class PL{
 
     void demultiplexing(std::string msg, Parser::Host host) {
       //std::cout<< "PL recieved "<< msg.c_str()<< " from host" << host.id << "\n";
-      if (msg.find("HEARTBEAT") == 0){
-        pl_deliver_hb(msg,host);
-      } else{
-        pl_deliver(msg, host);
+
+      if (msg.find(NACK) == 0){
+        msg.erase(0, NACK.length());
+        pl_deliver_nack(msg,host);
+      } else if (msg.find(ACK) == 0){
+        msg.erase(0, ACK.length());
+        pl_deliver_ack(msg, host);
+      } else if(msg.find(PROPOSAL) == 0){
+        msg.erase(0, PROPOSAL.length());
+        pl_deliver_prop(msg, host);
       }
     }
     

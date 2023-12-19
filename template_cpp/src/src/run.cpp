@@ -1,11 +1,10 @@
 #include "parser.hpp"
 #include "run.hpp"
 #include "PL.hpp"
-#include "BEB.hpp"
-#include "PFD.hpp"
+#include "Proposer.hpp"
+#include "Accepter.hpp"
 #include "utility.hpp"
-#include "URB.hpp"
-#include "FIFO.hpp"
+
 
 
 void callback(const std::string& msg, Parser::Host host_sndr){
@@ -14,9 +13,6 @@ void callback(const std::string& msg, Parser::Host host_sndr){
     std::cout.flush();
 } 
 
-void PFDCallback(Parser::Host host_crashed){
-    std::cout << "host " << host_crashed.id << " crashed!" << "\n";
-}
 
 void run(Parser parser, std::vector<Parser::Host> hosts){
     logFile.open(parser.outputPath());
@@ -29,13 +25,24 @@ void run(Parser parser, std::vector<Parser::Host> hosts){
         return;
     }
     size_t n = hosts.size();
-    unsigned long M;
+    unsigned int p;
+    unsigned int vs;
+    unsigned int ds;
+    std::vector<std::set<unsigned int>> proposals;
     std::string line;
     std::getline(file, line);
     std::istringstream iss(line);
-    if (!(iss >> M)) {
-        std::cerr << "Error parsing line: " << line << std::endl;
-        return;
+    iss >> p >> vs >> ds;
+    std::cout << "p: " << p << "vs: " << vs << "ds: "<< ds;
+    for (unsigned int i = 0; i < p; ++i) {
+        std::getline(file, line);
+        std::set<unsigned int> proposal;
+        std::istringstream iss(line);
+        unsigned int element;
+        while (iss >> element) {
+            proposal.insert(element);
+        }
+        proposals.push_back(proposal);
     }
     
     file.close();
@@ -43,25 +50,22 @@ void run(Parser parser, std::vector<Parser::Host> hosts){
 
     Parser::Host host_me = hosts[parser.id() - 1];
     PL* pl = new PL(host_me, hosts);
-    BEB* beb = new BEB(hosts, *pl);
-    PFD* pfd = new PFD(hosts, *pl);
-    URB* urb = new URB(host_me, hosts, *beb);
-    FIFO* fifo = new FIFO(host_me, hosts, *urb);
-
-    fifo -> subscribe(callback);
-    pfd -> subscribe([urb](Parser::Host host) {
-            urb -> pfd_notify(host);
-        });
-    pl -> subscribe( [beb](std::string msg, Parser::Host host) {
-            beb -> pl_deliver(msg, host);
-        },
-        [pfd](std::string msg, Parser::Host host) {
-            pfd -> pl_deliver_hb(msg, host);
+    Proposer* ppsr = new Proposer(hosts, *pl);
+    Acceptor* acptr = new Acceptor(*pl);
+    pl -> subscribe([ppsr](std::string msg, Parser::Host host) {
+            ppsr -> receiveNACK(msg, host);
+        },[ppsr](std::string msg, Parser::Host host) {
+            ppsr -> receiveACK(msg, host);
+        },[acptr](std::string msg, Parser::Host host) {
+            acptr -> receivePROP(msg, host);
         }
     );
+
+ 
     
-    for (unsigned long m = 0; m < M; m++){
-        fifo->broadcast(std::to_string(m+1).c_str() );
+    for (auto& proposal: proposals){
+        ppsr -> propose(proposal);
+        break;
     }
     
         
@@ -70,11 +74,9 @@ void run(Parser parser, std::vector<Parser::Host> hosts){
     while (true) {
         std::this_thread::sleep_for(std::chrono::hours(1));
     }
-    delete beb;
-    delete urb;
     delete pl;
-    delete pfd;
-    delete fifo;
+    delete ppsr;
+    delete acptr;
 }
 
 // void receive(std::vector<Parser::Host> hosts){
