@@ -7,8 +7,8 @@ extern const std::string PROPOSAL;
 extern const std::string ACK;
 extern const std::string NACK;
 void writeToLogFile(const std::string& message);
-std::string encode(const size_t& pNum, const std::set<unsigned int>& values);
-void decodeData(const std::string& encodedString, size_t& pNum, std::set<unsigned int>& values);
+std::string encode(size_t, size_t, const std::set<unsigned int>& );
+void decodeData(const std::string&, size_t&, size_t& , std::set<unsigned int>& );
 
 struct Pair { // a pair of host and msg
     Parser::Host host; //sometimes it signifies the sender sometimes the receiver

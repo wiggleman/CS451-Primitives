@@ -16,36 +16,27 @@ void writeToLogFile(const std::string& message) {
     }
 }
 
-std::string encode(const size_t& pNum, const std::set<unsigned int>& values) {
-    // Encode size_t to string
+std::string encode(size_t v1, size_t v2, const std::set<unsigned int>& v3) {
     std::ostringstream oss;
-    oss << pNum;
-    std::string encodedPNum = oss.str();
+    oss << v1 << " " << v2 << " ";
 
-    // Encode set to string
-    std::ostringstream setOss;
-    for (const auto& element : values) {
-        setOss << element << " ";
+    // Serialize the set elements
+    for (const auto& element : v3) {
+        oss << element << " ";
     }
-    std::string encodedValues = setOss.str();
 
-    return encodedPNum + "|" + encodedValues;
+    return oss.str();
 }
 
 // Decoder function
-void decodeData(const std::string& encodedString, size_t& pNum, std::set<unsigned int>& values) {
-    // Find the position of the separator
-    size_t separatorPos = encodedString.find('|');
+void decodeData(const std::string& encoded, size_t& v1, size_t& v2, std::set<unsigned int>& v3) {
+    std::istringstream iss(encoded);
+    iss >> v1 >> v2;
 
-    std::string encodedPNum = encodedString.substr(0, separatorPos);
-    std::string encodedValues = encodedString.substr(separatorPos + 1);
-
-    std::istringstream iss(encodedPNum);
-    iss >> pNum;
-
-    std::istringstream setIss(encodedValues);
+    // Deserialize the set elements
     unsigned int element;
-    while (setIss >> element) {
-        values.insert(element);
+    while (iss >> element) {
+        v3.insert(element);
     }
+    
 }

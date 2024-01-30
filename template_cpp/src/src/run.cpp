@@ -50,8 +50,8 @@ void run(Parser parser, std::vector<Parser::Host> hosts){
 
     Parser::Host host_me = hosts[parser.id() - 1];
     PL* pl = new PL(host_me, hosts);
-    Proposer* ppsr = new Proposer(hosts, *pl);
-    Acceptor* acptr = new Acceptor(*pl);
+    Proposer* ppsr = new Proposer(hosts, *pl, p);
+    Acceptor* acptr = new Acceptor(*pl, p);
     pl -> subscribe([ppsr](std::string msg, Parser::Host host) {
             ppsr -> receiveNACK(msg, host);
         },[ppsr](std::string msg, Parser::Host host) {
@@ -65,7 +65,6 @@ void run(Parser parser, std::vector<Parser::Host> hosts){
     
     for (auto& proposal: proposals){
         ppsr -> propose(proposal);
-        break;
     }
     
         
